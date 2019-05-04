@@ -84,8 +84,8 @@ if __name__ == '__main__':
 
     resnet.save_weights(weights_save_path)
 
-    score = resnet.evaluate(X_train, y_train, batch_size=10000)
+    score = resnet.evaluate(X_train, y_train, batch_size=256)
     print('train acc', score)
 
-    score = resnet.evaluate(X_eval, y_eval, batch_size=10000)
+    score = resnet.evaluate(X_eval, y_eval, batch_size=256)
     print('eval acc', score)

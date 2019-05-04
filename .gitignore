@@ -1,3 +1,7 @@
 *.gz
 .idea/
 *.tar
+*.h5
+*.jpg
+*.pyc
+__pycache__/
