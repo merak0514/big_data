@@ -16,7 +16,7 @@ train_path = '../train/'
 record_path = '../record.csv'
 weights_save_path = '../save.h5'
 BATCH_SIZE = 256
-os.environ['CUDA_VISIBLE_DEVICES'] = "0,6"
+os.environ['CUDA_VISIBLE_DEVICES'] = "1,2,4"
 
 
 def import_data(X_path=train_path, y_path=record_path):
@@ -61,10 +61,17 @@ def import_data(X_path=train_path, y_path=record_path):
     return X_train_, y_train_, X_eval_, y_eval_
 
 
-if __name__ == '__main__':
+def train():
     X_train, y_train, X_eval, y_eval = import_data()
     datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
-                                 zoom_range=[0.9, 1.1], horizontal_flip=True)
+                                 zoom_range=[0.8, 1.2], horizontal_flip=True)
+    datagen.fit(X_train)
+
+    resnet = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
+    resnet.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    X_train, y_train, X_eval, y_eval = import_data()
+    datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
+                                 zoom_range=[0.8, 1.2], horizontal_flip=True)
     datagen.fit(X_train)
 
     resnet = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
@@ -75,10 +82,10 @@ if __name__ == '__main__':
     csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
     es = EarlyStopping(patience=10, restore_best_weights=True)
     tb = TensorBoard()
-    resnet.fit(X_train, y_train, batch_size=BATCH_SIZE, epochs=10000, validation_data=(X_eval, y_eval),
-               callbacks=[checkpoint, csv_logger, tb, es])
+    # resnet.fit(X_train, y_train, batch_size=BATCH_SIZE, epochs=10000, validation_data=(X_eval, y_eval),
+    #            callbacks=[checkpoint, csv_logger, tb, es])
     resnet.fit_generator(datagen.flow(X_train, y_train, batch_size=BATCH_SIZE),
-                         steps_per_epoch=int(len(X_train) / BATCH_SIZE) * 10, epochs=200,
+                         steps_per_epoch=int(len(X_train) / BATCH_SIZE) * 3, epochs=200,
                          validation_data=(X_eval, y_eval),
                          callbacks=[checkpoint, csv_logger, tb, es])
 
@@ -87,5 +94,61 @@ if __name__ == '__main__':
     score = resnet.evaluate(X_train, y_train, batch_size=256)
     print('train acc', score)
 
+    classes_counts = np.zeros(9)
+    corrects_counts = np.zeros(9)
+    labels = np.argmax(y_eval, axis=1)
+    predicts = resnet.predict(X_eval, batch_size=256)
+    predicts = np.argmax(predicts, axis=1)
+    corrects = labels == predicts
+    for i in range(len(corrects)):
+        classes_counts[labels[i]] += 1
+        corrects_counts[labels[i]] += corrects[i]
+    acc_by_classes = corrects_counts / classes_counts
+    print('acc_by_classes: ', acc_by_classes)
+
     score = resnet.evaluate(X_eval, y_eval, batch_size=256)
     print('eval acc', score)
+    checkpoint = ModelCheckpoint('../model_keras.h5', monitor='val_loss', save_best_only=True,
+                                 save_weights_only=True)
+    csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
+    es = EarlyStopping(patience=10, restore_best_weights=True)
+    tb = TensorBoard()
+    # resnet.fit(X_train, y_train, batch_size=BATCH_SIZE, epochs=10000, validation_data=(X_eval, y_eval),
+    #            callbacks=[checkpoint, csv_logger, tb, es])
+    resnet.fit_generator(datagen.flow(X_train, y_train, batch_size=BATCH_SIZE),
+                         steps_per_epoch=int(len(X_train) / BATCH_SIZE) * 3, epochs=200,
+                         validation_data=(X_eval, y_eval),
+                         callbacks=[checkpoint, csv_logger, tb, es])
+
+    resnet.save_weights(weights_save_path)
+
+    evaluate(X_eval, y_eval, model=resnet)
+    evaluate(X_train, y_train, model=resnet)
+
+
+def evaluate(X_eval, y_eval, weights_path=weights_save_path, model=None):
+    if not (weights_path or model):
+        print('eval wrong!')
+        assert 0
+    if weights_path:
+        model = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
+        model.load_weights(weights_path)
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    classes_counts = np.zeros(9)  # 每个区域有几个
+    corrects_counts = np.zeros(9)  # 判斷對了的有幾個
+    labels = np.argmax(y_eval, axis=1)
+    predicts = model.predict(X_eval, batch_size=128)
+    predicts = np.argmax(predicts, axis=1)
+    corrects = labels == predicts
+    for i in range(len(corrects)):
+        classes_counts[labels[i]] += 1
+        corrects_counts[labels[i]] += corrects[i]
+    acc_by_classes = corrects_counts / classes_counts
+    for i, j in enumerate(acc_by_classes):
+        print('class: ', i, ', acc: ', j)
+    print('total_acc', sum(corrects_counts) / sum(classes_counts))
+
+
+if __name__ == '__main__':
+    train()
