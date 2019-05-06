@@ -10,15 +10,21 @@ import re
 train_path = '../train/'
 test_path = '../test/'
 save_file = '../train_users.txt'
+# save_path = '../users/'
+# if os.path.exists(save_path):
+#     os.mkdir(save_path)
 files_name = os.listdir(train_path)
 users = defaultdict(lambda: 0)
 for i, file in enumerate(files_name):
+    if file.find('txt') == -1:
+        continue
     with open(train_path+file) as f:
         for line in f:
             user = re.findall('(.+)?\t', line)[0]
             users[user] += 1
     f.close()
-    print('finish one', i)
+    print('finish one', i, file)
+    print(len(users))
 print('finish all files')
 sorted_users = sorted(users.items(), key=lambda item: item[1], reverse=True)
 print(sorted_users)
