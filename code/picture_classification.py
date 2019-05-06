@@ -13,13 +13,14 @@ from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoa
 from keras.preprocessing.image import ImageDataGenerator
 
 train_path = '../train/'
+test_path = '../test/'
 record_path = '../record.csv'
 weights_save_path = '../save.h5'
 BATCH_SIZE = 256
-os.environ['CUDA_VISIBLE_DEVICES'] = "1,2,4"
+os.environ['CUDA_VISIBLE_DEVICES'] = "3,6"
 
 
-def import_data(X_path=train_path, y_path=record_path):
+def load_train_data(X_path=train_path, y_path=record_path):
     folders_name_ = os.listdir(X_path)
     folders_name = []
     for folder in folders_name_:
@@ -33,7 +34,9 @@ def import_data(X_path=train_path, y_path=record_path):
     y_train_ = []
     X_eval_ = []
     y_eval_ = []
-    for i, folder in enumerate(folders_name):
+    for i in range(len(folders_name)):
+        folder = str(i+1).zfill(3) + '/'
+        print(folder)
         files_name = os.listdir(folder)
         label = np.zeros(9, dtype=np.int)
         label[i] = 1
@@ -62,16 +65,17 @@ def import_data(X_path=train_path, y_path=record_path):
 
 
 def train():
-    X_train, y_train, X_eval, y_eval = import_data()
+    X_train, y_train, X_eval, y_eval = load_train_data()
     datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
                                  zoom_range=[0.8, 1.2], horizontal_flip=True)
     datagen.fit(X_train)
 
     resnet = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
     resnet.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    X_train, y_train, X_eval, y_eval = import_data()
+    X_train, y_train, X_eval, y_eval = load_train_data()
     datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
-                                 zoom_range=[0.8, 1.2], horizontal_flip=True)
+                                 zoom_range=[0.8, 1.2], horizontal_flip=True, vertical_flip=True,
+                                 brightness_range=[0.8, 1.2])
     datagen.fit(X_train)
 
     resnet = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
@@ -87,7 +91,8 @@ def train():
     resnet.fit_generator(datagen.flow(X_train, y_train, batch_size=BATCH_SIZE),
                          steps_per_epoch=int(len(X_train) / BATCH_SIZE) * 3, epochs=200,
                          validation_data=(X_eval, y_eval),
-                         callbacks=[checkpoint, csv_logger, tb, es])
+                         callbacks=[checkpoint, csv_logger, tb, es],
+                         class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
 
     resnet.save_weights(weights_save_path)
 
@@ -122,7 +127,9 @@ def train():
 
     resnet.save_weights(weights_save_path)
 
+    print('eval acc:')
     evaluate(X_eval, y_eval, model=resnet)
+    print('train acc')
     evaluate(X_train, y_train, model=resnet)
 
 
@@ -150,5 +157,41 @@ def evaluate(X_eval, y_eval, weights_path=weights_save_path, model=None):
     print('total_acc', sum(corrects_counts) / sum(classes_counts))
 
 
+def predict(data_path=test_path, weights_path=weights_save_path, model=None):
+    def load_data(path_=test_path):
+        images = []
+        for index in range(10000):
+            image = cv2.imread(os.path.join(path_, str(index).zfill(6)+'.jpg'))
+            image = np.array(image, dtype=np.int)
+            images.append(image)
+
+        images = np.array(images, dtype=np.int)
+        print('finish loading unpredicted data')
+        return images
+
+    predict_path = 'predict.txt'
+    data = load_data(data_path)
+    if not (weights_path or model):
+        print('eval wrong!')
+        assert 0
+    if weights_path:
+        model = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
+        model.load_weights(weights_path)
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    predicts = model.predict(data, batch_size=32)
+    predicts = np.argmax(predicts, axis=1) + 1
+    print(predicts)
+    with open(predict_path, 'w+') as f:
+        print('start writing predict...')
+        for i, result in enumerate(predicts):
+            image_id = str(i).zfill(6)
+            result = str(np.str(result)).zfill(3)
+            f.write('\t'.join([image_id, result]))
+            f.write('\n')
+        f.close()
+    print('finish predicting.')
+
+
 if __name__ == '__main__':
     train()
+    predict()
