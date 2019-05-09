@@ -32,7 +32,6 @@ def combined_net():
     visit_input = Input(shape=VISIT_INPUT_SHAPE, name='visit_input')
     # visit_input_ = Reshape((7*24,))(visit_input)
     print(visit_input.shape)
-    # visit_input_ = squeeze(visit_input_, 1)
     # print(visit_input_.shape)
     visit_net = dense_net(visit_input)
     x = keras.layers.concatenate([image_net, visit_net])

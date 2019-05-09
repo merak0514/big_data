@@ -134,8 +134,9 @@ def train():
     #                     class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
 
     model.save_weights(weights_save_path)
+    print('weight saved')
 
-    score = model.evaluate([X_eval_image, X_eval_visit], y_train, batch_size=256)
+    score = model.evaluate([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE)
     print('train acc', score)
 
     print('eval acc:')
@@ -144,7 +145,10 @@ def train():
     evaluate(X_train_image, X_train_visit, y_train, model=model)
 
 
-def evaluate(X_eval_image, X_eval_visit, y_eval, weights_path=weights_save_path, model=None):
+def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=weights_save_path, model=None):
+    if not (X_eval_image or X_eval_visit or y_eval):
+        X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
+
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
@@ -171,24 +175,26 @@ def evaluate(X_eval_image, X_eval_visit, y_eval, weights_path=weights_save_path,
 def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path=weights_save_path, model=None,
             predict_path='predict_combine.txt'):
     def load_data():
-        images = []
-        visits = []
+        images_ = []
+        visits_ = []
         for index in range(10000):
             name = str(index).zfill(6)
             image = cv2.imread(os.path.join(image_path, name + '.jpg'))
             image = np.array(image, dtype=np.int)
-            images.append(image)
+            images_.append(image)
 
             npy_datum = np.load(os.path.join(visit_path, name+'.txt.npy'))
             visit = np.ndarray.flatten(np.average(npy_datum, axis=1))
-            visits.append(visit)
+            visits_.append(visit)
 
-        images = np.array(images, dtype=np.int)
-        visits = np.array(images, dtype=np.float)
+        images_ = np.array(images_, dtype=np.int)
+        visits_ = np.array(visits_, dtype=np.float)
+        print('image shape', images_.shape)
+        print('visit shape', visits_.shape)
         print('finish loading unpredicted data')
-        return images, visits
+        return images_, visits_
 
-    data = load_data()
+    images, visits = load_data()
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
@@ -196,7 +202,7 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
         model = combined_net()
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    predicts = model.predict(data, batch_size=32)
+    predicts = model.predict([images, visits], batch_size=32)
     predicts = np.argmax(predicts, axis=1) + 1
     print(predicts)
     with open(predict_path, 'w+') as f:
@@ -211,5 +217,5 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    train()
+    # train()
     predict()
