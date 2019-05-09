@@ -28,7 +28,7 @@ for i, file in enumerate(files_name):
 print('finish all files')
 sorted_users = sorted(users.items(), key=lambda item: item[1], reverse=True)
 print(sorted_users)
-with open(user, 'w+') as ff:
+with open(save_file, 'w+') as ff:
     for i in sorted_users:
         ff.write(str(i))
 

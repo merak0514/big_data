@@ -41,7 +41,7 @@ def load_train_data(X_path=train_path, y_path=record_path):
         label = np.zeros(9, dtype=np.int)
         label[i] = 1
         for j, file in enumerate(files_name):
-            name = re.findall('([0-9]+)_', file)[0]
+            name = re.findall('^([0-9]+)_', file)[0]
             image = cv2.imread(os.path.join(folder, file))
             image = np.array(image, np.int)
             X_name.append(name)
@@ -67,13 +67,6 @@ def load_train_data(X_path=train_path, y_path=record_path):
 def train():
     X_train, y_train, X_eval, y_eval = load_train_data()
     datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
-                                 zoom_range=[0.8, 1.2], horizontal_flip=True)
-    datagen.fit(X_train)
-
-    resnet = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
-    resnet.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    X_train, y_train, X_eval, y_eval = load_train_data()
-    datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
                                  zoom_range=[0.8, 1.2], horizontal_flip=True, vertical_flip=True,
                                  brightness_range=[0.8, 1.2])
     datagen.fit(X_train)
@@ -93,37 +86,6 @@ def train():
                          validation_data=(X_eval, y_eval),
                          callbacks=[checkpoint, csv_logger, tb, es],
                          class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
-
-    resnet.save_weights(weights_save_path)
-
-    score = resnet.evaluate(X_train, y_train, batch_size=256)
-    print('train acc', score)
-
-    classes_counts = np.zeros(9)
-    corrects_counts = np.zeros(9)
-    labels = np.argmax(y_eval, axis=1)
-    predicts = resnet.predict(X_eval, batch_size=256)
-    predicts = np.argmax(predicts, axis=1)
-    corrects = labels == predicts
-    for i in range(len(corrects)):
-        classes_counts[labels[i]] += 1
-        corrects_counts[labels[i]] += corrects[i]
-    acc_by_classes = corrects_counts / classes_counts
-    print('acc_by_classes: ', acc_by_classes)
-
-    score = resnet.evaluate(X_eval, y_eval, batch_size=256)
-    print('eval acc', score)
-    checkpoint = ModelCheckpoint('../model_keras.h5', monitor='val_loss', save_best_only=True,
-                                 save_weights_only=True)
-    csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
-    es = EarlyStopping(patience=10, restore_best_weights=True)
-    tb = TensorBoard()
-    # resnet.fit(X_train, y_train, batch_size=BATCH_SIZE, epochs=10000, validation_data=(X_eval, y_eval),
-    #            callbacks=[checkpoint, csv_logger, tb, es])
-    resnet.fit_generator(datagen.flow(X_train, y_train, batch_size=BATCH_SIZE),
-                         steps_per_epoch=int(len(X_train) / BATCH_SIZE) * 3, epochs=200,
-                         validation_data=(X_eval, y_eval),
-                         callbacks=[checkpoint, csv_logger, tb, es])
 
     resnet.save_weights(weights_save_path)
 
