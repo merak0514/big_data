@@ -51,10 +51,6 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
             name = re.findall('^(.+)\.jpg', file)[0]
             image = cv2.imread(os.path.join(folder, file))
             shape = image.shape
-            M = cv2.getRotationMatrix2D(
-                (shape[0]/2, shape[1]/2), np.random.randint(-10, 10), 1)
-            image = cv2.warpAffine(image, M, dsize=(shape[0], shape[1]))
-            image = np.array(image, np.int)
 
             npy_name = '.'.join([name, 'txt', 'npy'])
             npy_datum = np.load(visit_path + npy_name)
@@ -62,13 +58,15 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
 
             X_name.append(name)
             if j % 5 == 0:
-                y_eval_.append(label)
-                X_eval_visit_.append(visit)
+                image = np.array(image, np.int)
                 y_eval_.append(label)
                 X_eval_visit_.append(visit)
                 X_eval_image_.append(image)
-                X_eval_image_.append(np.flip(image, axis=np.random.randint(-1, 2)))
             else:
+                M = cv2.getRotationMatrix2D(
+                    (shape[0] / 2, shape[1] / 2), np.random.randint(-10, 10), 1)
+                image = cv2.warpAffine(image, M, dsize=(shape[0], shape[1]))
+                image = np.array(image, np.int)
                 y_train_.append(label)
                 X_train_visit_.append(visit)
                 X_train_image_.append(image)
