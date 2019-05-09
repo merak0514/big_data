@@ -21,7 +21,6 @@ train_path = '../train/'
 record_path = '../record.csv'
 weights_save_path = '../save.h5'
 BATCH_SIZE = 256
-os.environ['CUDA_VISIBLE_DEVICES'] = "0,3,8"
 
 VISIT_INPUT_SHAPE = np.array([7*24])
 IMAGE_INPUT_SHAPE = (100, 100, 3)
