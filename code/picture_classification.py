@@ -3,6 +3,7 @@
 # @Time     : 15:42
 # @File     : picture_classification.py
 # @Software : PyCharm
+# image model
 import numpy as np
 import cv2
 import csv
@@ -12,21 +13,20 @@ from keras.applications.resnet50 import ResNet50
 from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
 from keras.preprocessing.image import ImageDataGenerator
 
-train_path = '../train/'
-test_path = '../test/'
-record_path = '../record.csv'
+IMAGE_TRAIN_PATH = '../train/'
+IMAGE_TEST_PATH = '../test/'
 weights_save_path = '../save.h5'
-BATCH_SIZE = 256
-os.environ['CUDA_VISIBLE_DEVICES'] = "3,6"
+BATCH_SIZE = 128
+os.environ['CUDA_VISIBLE_DEVICES'] = "9"
 
 
-def load_train_data(X_path=train_path, y_path=record_path):
-    folders_name_ = os.listdir(X_path)
+def load_train_data(image_path=IMAGE_TRAIN_PATH):
+    folders_name_ = os.listdir(image_path)
     folders_name = []
     for folder in folders_name_:
         # print(folder.find('txt'))
         if folder.find('txt') == -1:
-            folders_name.append(os.path.join(train_path, folder) + '/')
+            folders_name.append(os.path.join(IMAGE_TRAIN_PATH, folder) + '/')
     print(folders_name)
 
     X_name = []
@@ -36,6 +36,7 @@ def load_train_data(X_path=train_path, y_path=record_path):
     y_eval_ = []
     for i in range(len(folders_name)):
         folder = str(i+1).zfill(3) + '/'
+        folder = image_path + folder
         print(folder)
         files_name = os.listdir(folder)
         label = np.zeros(9, dtype=np.int)
@@ -95,7 +96,7 @@ def train():
     evaluate(X_train, y_train, model=resnet)
 
 
-def evaluate(X_eval, y_eval, weights_path=weights_save_path, model=None):
+def evaluate(X_eval_image, y_eval, weights_path=weights_save_path, model=None):
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
@@ -104,23 +105,33 @@ def evaluate(X_eval, y_eval, weights_path=weights_save_path, model=None):
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    classes_counts = np.zeros(9)  # 每个区域有几个
-    corrects_counts = np.zeros(9)  # 判斷對了的有幾個
     labels = np.argmax(y_eval, axis=1)
-    predicts = model.predict(X_eval, batch_size=128)
+    predicts = model.predict(X_eval_image, batch_size=128)
     predicts = np.argmax(predicts, axis=1)
     corrects = labels == predicts
+
+    recall_counts = np.zeros(9)  # 每个区域有几个，真實的總的A類
+    recall_corrects_counts = np.zeros(9)  # 預測正確的A類, 用于計算查全率（預測正確的A類/真實的總的A類）
+
+    precision_counts = np.zeros(9)  # 預測的A類總數，用於計算查準率（預測正確的A類/預測的A類總數）
+    precision_correct_counts = np.zeros(9)  # 預測正確的A類
+
     for i in range(len(corrects)):
-        classes_counts[labels[i]] += 1
-        corrects_counts[labels[i]] += corrects[i]
-    acc_by_classes = corrects_counts / classes_counts
-    for i, j in enumerate(acc_by_classes):
-        print('class: ', i, ', acc: ', j)
-    print('total_acc', sum(corrects_counts) / sum(classes_counts))
+        recall_counts[labels[i]] += 1
+        recall_corrects_counts[labels[i]] += corrects[i]
+
+        precision_counts[predicts[i]] += 1
+        precision_correct_counts[predicts[i]] += corrects[i]
+
+    recall_by_classes = recall_corrects_counts / recall_counts
+    precision_by_classes = precision_correct_counts / precision_counts
+    for i, j in enumerate(recall_by_classes):
+        print('class: {}', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
+    print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
 
-def predict(data_path=test_path, weights_path=weights_save_path, model=None):
-    def load_data(path_=test_path):
+def predict(image_path=IMAGE_TEST_PATH, weights_path=weights_save_path, model=None):
+    def load_data(path_=IMAGE_TEST_PATH):
         images = []
         for index in range(10000):
             image = cv2.imread(os.path.join(path_, str(index).zfill(6)+'.jpg'))
@@ -132,7 +143,7 @@ def predict(data_path=test_path, weights_path=weights_save_path, model=None):
         return images
 
     predict_path = 'predict.txt'
-    data = load_data(data_path)
+    data = load_data(image_path)
     if not (weights_path or model):
         print('eval wrong!')
         assert 0

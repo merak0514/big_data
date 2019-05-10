@@ -3,6 +3,7 @@
 # @Time     : 16:48
 # @File     : train.py
 # @Software : PyCharm
+# combine model
 from model import combined_net
 import numpy as np
 import cv2
@@ -20,7 +21,7 @@ VISIT_TRAIN_PATH = '../npy/train_visit/'
 VISIT_TEST_PATH = '../npy/test_visit/'
 weights_save_path = '../save_combine.h5'
 BATCH_SIZE = 64
-os.environ['CUDA_VISIBLE_DEVICES'] = "7,8, 9"
+os.environ['CUDA_VISIBLE_DEVICES'] = "7"
 
 
 def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, output_shape=True):
@@ -42,7 +43,7 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
     y_eval_ = []
     for i in range(len(folders_name)):
         folder = str(i + 1).zfill(3) + '/'
-        folder = IMAGE_TRAIN_PATH + folder
+        folder = image_path + folder
         print(folder)
         files_name = os.listdir(folder)
         label = np.zeros(9, dtype=np.int)
@@ -124,9 +125,10 @@ def train():
     csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
     es = EarlyStopping(patience=10, restore_best_weights=True)
     tb = TensorBoard()
-    model.fit([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE, epochs=10000,
+    model.fit([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE, epochs=10000, shuffle=True,
               validation_data=([X_eval_image, X_eval_visit], y_eval),
-              callbacks=[checkpoint, csv_logger, tb, es])
+              callbacks=[checkpoint, csv_logger, tb, es],
+              class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
     # model.fit_generator(datagen,
     #                     steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=200,
     #                     validation_data=([X_eval_image, X_eval_visit], y_eval),
@@ -146,7 +148,7 @@ def train():
 
 
 def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=weights_save_path, model=None):
-    if not (X_eval_image or X_eval_visit or y_eval):
+    if not (X_eval_image or (X_eval_visit or y_eval)):
         X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
 
     if not (weights_path or model):
@@ -157,19 +159,29 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=wei
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    classes_counts = np.zeros(9)  # 每个区域有几个
-    corrects_counts = np.zeros(9)  # 判斷對了的有幾個
     labels = np.argmax(y_eval, axis=1)
     predicts = model.predict([X_eval_image, X_eval_visit], batch_size=128)
     predicts = np.argmax(predicts, axis=1)
     corrects = labels == predicts
+
+    recall_counts = np.zeros(9)  # 每个区域有几个，真實的總的A類
+    recall_corrects_counts = np.zeros(9)  # 預測正確的A類, 用于計算查全率（預測正確的A類/真實的總的A類）
+
+    precision_counts = np.zeros(9)  # 預測的A類總數，用於計算查準率（預測正確的A類/預測的A類總數）
+    precision_correct_counts = np.zeros(9)  # 預測正確的A類
+
     for i in range(len(corrects)):
-        classes_counts[labels[i]] += 1
-        corrects_counts[labels[i]] += corrects[i]
-    acc_by_classes = corrects_counts / classes_counts
-    for i, j in enumerate(acc_by_classes):
-        print('class: ', i, ', acc: ', j)
-    print('total_acc', sum(corrects_counts) / sum(classes_counts))
+        recall_counts[labels[i]] += 1
+        recall_corrects_counts[labels[i]] += corrects[i]
+
+        precision_counts[predicts[i]] += 1
+        precision_correct_counts[predicts[i]] += corrects[i]
+
+    recall_by_classes = recall_corrects_counts / recall_counts
+    precision_by_classes = precision_correct_counts / precision_counts
+    for i, j in enumerate(recall_by_classes):
+        print('class: {}', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
+    print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
 
 def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path=weights_save_path, model=None,
@@ -217,5 +229,5 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    # train()
+    train()
     predict()

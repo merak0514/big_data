@@ -20,7 +20,6 @@ from keras.models import Model
 train_path = '../train/'
 record_path = '../record.csv'
 weights_save_path = '../save.h5'
-BATCH_SIZE = 256
 
 VISIT_INPUT_SHAPE = np.array([7*24])
 IMAGE_INPUT_SHAPE = (100, 100, 3)
@@ -36,7 +35,9 @@ def combined_net():
     visit_net = dense_net(visit_input)
     x = keras.layers.concatenate([image_net, visit_net])
     x = Dense(1024)(x)
+    x = BatchNormalization()(x)
     x = ReLU()(x)
+    x = Dropout(0.5)(x)
     outputs = Dense(9, activation='softmax')(x)
     model = Model(inputs=[image_input, visit_input], outputs=outputs)
     return model
