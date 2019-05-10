@@ -96,7 +96,7 @@ def train():
     evaluate(X_train, y_train, model=resnet)
 
 
-def evaluate(X_eval_image, y_eval, weights_path=weights_save_path, model=None):
+def evaluate(X_eval_image=None, y_eval=None, weights_path=weights_save_path, model=None):
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
@@ -104,6 +104,8 @@ def evaluate(X_eval_image, y_eval, weights_path=weights_save_path, model=None):
         model = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    if not X_eval_image:
+        X_eval_image, y_eval, _, _ = load_train_data()
 
     labels = np.argmax(y_eval, axis=1)
     predicts = model.predict(X_eval_image, batch_size=128)
@@ -126,7 +128,7 @@ def evaluate(X_eval_image, y_eval, weights_path=weights_save_path, model=None):
     recall_by_classes = recall_corrects_counts / recall_counts
     precision_by_classes = precision_correct_counts / precision_counts
     for i, j in enumerate(recall_by_classes):
-        print('class: {}', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
+        print('class: ', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
     print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
 

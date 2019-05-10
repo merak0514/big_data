@@ -130,7 +130,7 @@ class Model(Sequential):
         recall_by_classes = recall_corrects_counts / recall_counts
         precision_by_classes = precision_correct_counts / precision_counts
         for i, j in enumerate(recall_by_classes):
-            print('class: {}', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
+            print('class: ', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
         print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
     def predict_(self, visit_path=VISIT_TEST_PATH, model_path=None,

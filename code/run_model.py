@@ -180,7 +180,7 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=wei
     recall_by_classes = recall_corrects_counts / recall_counts
     precision_by_classes = precision_correct_counts / precision_counts
     for i, j in enumerate(recall_by_classes):
-        print('class: {}', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
+        print('class: ', i, ' recall (the origin acc): ', j, 'precision: ', precision_by_classes[i])
     print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
 
