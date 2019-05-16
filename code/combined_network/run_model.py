@@ -122,12 +122,12 @@ def train():
 
     checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_loss', save_best_only=True,
                                  save_weights_only=True)
-    csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
+    # csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
     es = EarlyStopping(patience=10, restore_best_weights=True)
-    tb = TensorBoard()
+    # tb = TensorBoard()
     model.fit([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE, epochs=10000, shuffle=True,
               validation_data=([X_eval_image, X_eval_visit], y_eval),
-              callbacks=[checkpoint, csv_logger, tb, es],
+              callbacks=[checkpoint, es],
               class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
     # model.fit_generator(datagen,
     #                     steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=200,

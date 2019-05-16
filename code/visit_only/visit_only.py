@@ -168,10 +168,10 @@ class Model(Sequential):
         checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_acc', save_best_only=True,
                                      save_weights_only=True)
         es = EarlyStopping(patience=20, restore_best_weights=True)
-        tb = TensorBoard()
+        # tb = TensorBoard()
 
         self.fit(X_train, y_train, batch_size=batch_size, epochs=10000, validation_data=(X_eval, y_eval),
-                 callbacks=[checkpoint, tb, es])
+                 callbacks=[checkpoint, es])
         self.save_weights(save_path)
         score = self.evaluate(X_train, y_train, batch_size=10000)
         print('train loss', score)
