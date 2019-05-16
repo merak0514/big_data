@@ -3,23 +3,10 @@
 # @Time     : 15:42
 # @File     : picture_classification.py
 # @Software : PyCharm
-import numpy as np
-import cv2
-import csv
-import re
-import os
-from keras.applications.resnet50 import ResNet50
-from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers import Reshape
-from keras.backend import squeeze
 from resnet import *
 from visit_network import *
 from keras.models import Model
 
-train_path = '../train/'
-record_path = '../record.csv'
-weights_save_path = '../save.h5'
 
 VISIT_INPUT_SHAPE = np.array([7*24])
 IMAGE_INPUT_SHAPE = (100, 100, 3)

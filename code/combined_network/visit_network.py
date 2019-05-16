@@ -4,7 +4,6 @@
 # @File     : visit_net.py
 # @Software : PyCharm
 from keras.layers import Dense, Conv2D, BatchNormalization, Activation, ReLU, Flatten, Reshape, Dropout
-from keras.backend import reshape
 import numpy as np
 
 

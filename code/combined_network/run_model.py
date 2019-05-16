@@ -7,7 +7,6 @@
 from model import combined_net
 import numpy as np
 import cv2
-import csv
 import re
 import os
 from keras.applications.resnet50 import ResNet50
@@ -15,13 +14,14 @@ from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoa
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers.core import Reshape
 
-IMAGE_TRAIN_PATH = '../train/'
-IMAGE_TEST_PATH = '../test/'
-VISIT_TRAIN_PATH = '../npy/train_visit/'
-VISIT_TEST_PATH = '../npy/test_visit/'
-weights_save_path = '../save_combine.h5'
+IMAGE_TRAIN_PATH = '../../train/'
+IMAGE_TEST_PATH = '../../test/'
+VISIT_TRAIN_PATH = '../../npy/train_visit/'
+VISIT_TEST_PATH = '../../npy/test_visit/'
+WEIGHTS_SAVE_PATH = '../../result/save_combine.h5'
+MODEL_CKPT = '../../result/model_keras_combine.h5'
 BATCH_SIZE = 64
-os.environ['CUDA_VISIBLE_DEVICES'] = "7"
+os.environ['CUDA_VISIBLE_DEVICES'] = "3"
 
 
 def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, output_shape=True):
@@ -120,7 +120,7 @@ def train():
     model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    checkpoint = ModelCheckpoint('../model_keras_combine.h5', monitor='val_loss', save_best_only=True,
+    checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_loss', save_best_only=True,
                                  save_weights_only=True)
     csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
     es = EarlyStopping(patience=10, restore_best_weights=True)
@@ -135,7 +135,7 @@ def train():
     #                     callbacks=[checkpoint, csv_logger, tb, es],
     #                     class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
 
-    model.save_weights(weights_save_path)
+    model.save_weights(WEIGHTS_SAVE_PATH)
     print('weight saved')
 
     score = model.evaluate([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE)
@@ -147,8 +147,8 @@ def train():
     evaluate(X_train_image, X_train_visit, y_train, model=model)
 
 
-def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=weights_save_path, model=None):
-    if not (X_eval_image or (X_eval_visit or y_eval)):
+def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEIGHTS_SAVE_PATH, model=None):
+    if not X_eval_image:
         X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
 
     if not (weights_path or model):
@@ -184,7 +184,7 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=wei
     print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
 
-def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path=weights_save_path, model=None,
+def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path=WEIGHTS_SAVE_PATH, model=None,
             predict_path='predict_combine.txt'):
     def load_data():
         images_ = []
@@ -229,5 +229,5 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    train()
+    evaluate()
     predict()

@@ -6,16 +6,16 @@
 # image model
 import numpy as np
 import cv2
-import csv
 import re
 import os
 from keras.applications.resnet50 import ResNet50
 from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
 from keras.preprocessing.image import ImageDataGenerator
 
-IMAGE_TRAIN_PATH = '../train/'
-IMAGE_TEST_PATH = '../test/'
-weights_save_path = '../save.h5'
+IMAGE_TRAIN_PATH = '../../train/'
+IMAGE_TEST_PATH = '../../test/'
+WEIGHTS_SAVE_PATH = '../../save.h5'
+MODEL_CKPT = '../../result/model_keras.h5'
 BATCH_SIZE = 128
 os.environ['CUDA_VISIBLE_DEVICES'] = "9"
 
@@ -75,9 +75,9 @@ def train():
     resnet = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
     resnet.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    checkpoint = ModelCheckpoint('../model_keras.h5', monitor='val_loss', save_best_only=True,
+    checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_loss', save_best_only=True,
                                  save_weights_only=True)
-    csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
+    # csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
     es = EarlyStopping(patience=10, restore_best_weights=True)
     tb = TensorBoard()
     # resnet.fit(X_train, y_train, batch_size=BATCH_SIZE, epochs=10000, validation_data=(X_eval, y_eval),
@@ -85,10 +85,10 @@ def train():
     resnet.fit_generator(datagen.flow(X_train, y_train, batch_size=BATCH_SIZE),
                          steps_per_epoch=int(len(X_train) / BATCH_SIZE) * 3, epochs=200,
                          validation_data=(X_eval, y_eval),
-                         callbacks=[checkpoint, csv_logger, tb, es],
+                         callbacks=[checkpoint, tb, es],
                          class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
 
-    resnet.save_weights(weights_save_path)
+    resnet.save_weights(WEIGHTS_SAVE_PATH)
 
     print('eval acc:')
     evaluate(X_eval, y_eval, model=resnet)
@@ -96,7 +96,7 @@ def train():
     evaluate(X_train, y_train, model=resnet)
 
 
-def evaluate(X_eval_image=None, y_eval=None, weights_path=weights_save_path, model=None):
+def evaluate(X_eval_image=None, y_eval=None, weights_path=WEIGHTS_SAVE_PATH, model=None):
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
@@ -104,7 +104,7 @@ def evaluate(X_eval_image=None, y_eval=None, weights_path=weights_save_path, mod
         model = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    if not X_eval_image:
+    if X_eval_image == None:
         X_eval_image, y_eval, _, _ = load_train_data()
 
     labels = np.argmax(y_eval, axis=1)
@@ -132,7 +132,7 @@ def evaluate(X_eval_image=None, y_eval=None, weights_path=weights_save_path, mod
     print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
 
-def predict(image_path=IMAGE_TEST_PATH, weights_path=weights_save_path, model=None):
+def predict(image_path=IMAGE_TEST_PATH, weights_path=WEIGHTS_SAVE_PATH, model=None):
     def load_data(path_=IMAGE_TEST_PATH):
         images = []
         for index in range(10000):
@@ -168,5 +168,4 @@ def predict(image_path=IMAGE_TEST_PATH, weights_path=weights_save_path, model=No
 
 
 if __name__ == '__main__':
-    train()
-    predict()
+    evaluate()

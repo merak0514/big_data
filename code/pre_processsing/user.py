@@ -7,9 +7,9 @@ import os
 from collections import defaultdict
 import re
 
-train_path = '../train/'
-test_path = '../test/'
-save_file = '../train_users.txt'
+train_path = '../../train/'
+test_path = '../../test/'
+save_file = '../../result/train_users.txt'
 # save_path = '../users/'
 # if os.path.exists(save_path):
 #     os.mkdir(save_path)

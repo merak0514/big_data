@@ -33,15 +33,15 @@ def visit2array(table):
 
 
 def visit2array_test():
-    file_names = os.listdir('../test/')
+    file_names = os.listdir('../../test/')
     length = len(file_names)
     start_time = time.time()
     for index, file_name in enumerate(file_names):
         if file_name.find('txt') == -1:
             continue
-        table = pd.read_table("../test/"+file_name+".txt", header=None)
+        table = pd.read_table("../../test/"+file_name+".txt", header=None)
         array = visit2array(table)
-        np.save("../npy/test_visit/"+file_name+".npy", array)
+        np.save("../../npy/test_visit/"+file_name+".npy", array)
         sys.stdout.write('\r>> Processing visit data %d/%d'%(index+1, length))
         sys.stdout.flush()
     sys.stdout.write('\n')
@@ -50,15 +50,15 @@ def visit2array_test():
 
 def visit2array_train():
     # table = pd.read_csv("../data/train.txt", header=None)
-    file_names = os.listdir('../train/')
+    file_names = os.listdir('../../train/')
     length = len(file_names)
     start_time = time.time()
     for index, file_name in enumerate(file_names):
         if file_name.find('txt') == -1:
             continue
-        table = pd.read_table("../train/"+file_name+".txt", header=None)
+        table = pd.read_table("../../train/"+file_name+".txt", header=None)
         array = visit2array(table)
-        np.save("../npy/train_visit/"+file_name+".npy", array)
+        np.save("../../npy/train_visit/"+file_name+".npy", array)
         sys.stdout.write('\r>> Processing visit data %d/%d'%(index+1, length))
         sys.stdout.flush()
     sys.stdout.write('\n')
@@ -66,14 +66,14 @@ def visit2array_train():
 
 
 def visit2array_valid():
-    table = pd.read_csv("../data/valid.txt", header=None)
+    table = pd.read_csv("../../data/valid.txt", header=None)
     filenames = [a[0].split("/")[-1].split('.')[0] for a in table.values]
     length = len(filenames)
     start_time = time.time()
     for index, filename in enumerate(filenames):
-        table = pd.read_table("../data/train/"+filename+".txt", header=None)
+        table = pd.read_table("../../data/train/"+filename+".txt", header=None)
         array = visit2array(table)
-        np.save("../data/npy/train_visit/"+filename+".npy", array)
+        np.save("../../data/npy/train_visit/"+filename+".npy", array)
         sys.stdout.write('\r>> Processing visit data %d/%d'%(index+1, length))
         sys.stdout.flush()
     sys.stdout.write('\n')
@@ -81,10 +81,10 @@ def visit2array_valid():
 
 
 if __name__ == '__main__':
-    if not os.path.exists("../npy/test_visit/"):
-        os.makedirs("../npy/test_visit/")
-    if not os.path.exists("../npy/train_visit/"):
-        os.makedirs("../npy/train_visit/")
+    if not os.path.exists("../../npy/test_visit/"):
+        os.makedirs("../../npy/test_visit/")
+    if not os.path.exists("../../npy/train_visit/"):
+        os.makedirs("../../npy/train_visit/")
     visit2array_train()
     # visit2array_valid()
     # visit2array_test()

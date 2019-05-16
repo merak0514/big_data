@@ -4,23 +4,20 @@
 # @File     : visit_only.py
 # @Software : PyCharm
 # visit model
-from model import combined_net
 import numpy as np
-import cv2
-import csv
 import re
 import os
 from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
 from keras.layers import Dense,BatchNormalization, LeakyReLU, Dropout
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers.core import Reshape
 from keras.models import Sequential
 
-IMAGE_TRAIN_PATH = '../train/'
-IMAGE_TEST_PATH = '../test/'
-VISIT_TRAIN_PATH = '../npy/train_visit/'
-VISIT_TEST_PATH = '../npy/test_visit/'
-weights_save_path = '../save_visit_only.h5'
+IMAGE_TRAIN_PATH = '../../train/'
+IMAGE_TEST_PATH = '../../test/'
+VISIT_TRAIN_PATH = '../../npy/train_visit/'
+VISIT_TEST_PATH = '../../npy/test_visit/'
+WEIGHTS_SAVE_PATH = '../../result/save_visit_only.h5'
+PREDICT_PATH = '../../result/predict_visit_only.txt'
+MODEL_CKPT = '../../result/model_visit_only.h5'
 BATCH_SIZE = 256
 os.environ['CUDA_VISIBLE_DEVICES'] = "9"
 
@@ -101,7 +98,7 @@ class Model(Sequential):
 
         self.summary()
 
-    def eval(self, X_eval_visit=None, y_eval=None, weights_path=weights_save_path):
+    def eval(self, X_eval_visit=None, y_eval=None, weights_path=WEIGHTS_SAVE_PATH):
         if not (X_eval_visit or y_eval):
             X_train_visit, y_train, X_eval_visit, y_eval = load_train_data()
 
@@ -134,7 +131,7 @@ class Model(Sequential):
         print('total_acc', sum(recall_corrects_counts) / sum(recall_counts))
 
     def predict_(self, visit_path=VISIT_TEST_PATH, model_path=None,
-                 X=None, predict_path='predict_visit_only.txt'):
+                 X=None, predict_path=PREDICT_PATH):
         def load_data():
             visits_ = []
             for index in range(10000):
@@ -165,17 +162,16 @@ class Model(Sequential):
             f.close()
         print('finish predicting.')
 
-    def train(self, save_path=weights_save_path, batch_size=BATCH_SIZE):
+    def train(self, save_path=WEIGHTS_SAVE_PATH, batch_size=BATCH_SIZE):
         X_train, y_train, X_eval, y_eval = load_train_data()
 
-        checkpoint = ModelCheckpoint('model_visit_only.h5', monitor='val_acc', save_best_only=True,
+        checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_acc', save_best_only=True,
                                      save_weights_only=True)
-        csv_logger = CSVLogger('cnn_log.csv', separator=',', append=False)
         es = EarlyStopping(patience=20, restore_best_weights=True)
         tb = TensorBoard()
 
         self.fit(X_train, y_train, batch_size=batch_size, epochs=10000, validation_data=(X_eval, y_eval),
-                 callbacks=[checkpoint, csv_logger, tb, es])
+                 callbacks=[checkpoint, tb, es])
         self.save_weights(save_path)
         score = self.evaluate(X_train, y_train, batch_size=10000)
         print('train loss', score)

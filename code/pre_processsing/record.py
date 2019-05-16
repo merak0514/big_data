@@ -8,9 +8,9 @@ import os
 import csv
 import re
 
-train_path = '../train/'
-test_path = '../test/'
-record_path = '../record.csv'
+train_path = '../../train/'
+test_path = '../../test/'
+record_path = '../../result/record.csv'
 folders_name_ = os.listdir(train_path)
 folders_name = []
 for folder in folders_name_:
