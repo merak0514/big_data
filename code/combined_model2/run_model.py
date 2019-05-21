@@ -3,6 +3,8 @@
 # @Time     : 9:21
 # @File     : run_model.py
 # @Software : PyCharm
+import sys
+sys.path.append('../')
 from src.data_loader import load_test_data, load_train_data
 from combined_model2.model import combined_net, visit_net, image_net
 import numpy as np
@@ -53,55 +55,55 @@ def train():
     checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_acc', save_best_only=True,
                                  save_weights_only=True)
     es = EarlyStopping(patience=15, restore_best_weights=True)
-    with 'image_part':
-        model_image = image_net()
-        model_image.summary()
-        datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
-                                     zoom_range=[0.8, 1.2], horizontal_flip=True, vertical_flip=True,
-                                     brightness_range=[0.8, 1.2])
-        datagen.fit(X_train_image)
 
-        model_image.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    """start of visit part"""
+    model_visit = visit_net()
+    model_visit.summary()
+    model_visit.fit(X_train_visit, y_train, batch_size=BATCH_SIZE, epochs=10000,
+                    validation_data=(X_eval_visit, y_eval),
+                    callbacks=[checkpoint, es])
+    model_visit.save_weights(WEIGHTS_SAVE_PATH_VISIT)
+    """end of visit part"""
 
-        model_image.fit_generator(datagen.flow(X_train_image, y_train, batch_size=BATCH_SIZE),
-                                  steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=500,
-                                  validation_data=(X_train_image, y_eval),
-                                  callbacks=[checkpoint, es],
-                                  class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
-        model_image.save_weights(WEIGHTS_SAVE_PATH_IMAGE)
-        """end of image part"""
+    # with 'image_part' as tmp:
+    model_image = image_net()
+    model_image.summary()
+    datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
+                                 zoom_range=[0.8, 1.2], horizontal_flip=True, vertical_flip=True,
+                                 brightness_range=[0.8, 1.2])
+    datagen.fit(X_train_image)
 
-    with 'visit_part':
-        model_visit = visit_net()
-        model_visit.summary()
-        model_visit.fit(X_train_visit, y_train, batch_size=BATCH_SIZE, epochs=10000,
-                        validation_data=(X_eval_visit, y_eval),
-                        callbacks=[checkpoint, es])
-        model_visit.save_weights(WEIGHTS_SAVE_PATH_VISIT)
-        """end of visit part"""
+    model_image.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    with 'combined_part':
-        model = combined_net()
-        model.summary()
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        model.load_weights(WEIGHTS_SAVE_PATH_VISIT, by_name=True)
-        model.load_weights(WEIGHTS_SAVE_PATH_IMAGE, by_name=True)
+    model_image.fit_generator(datagen.flow(X_train_image, y_train, batch_size=BATCH_SIZE),
+                              steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=500,
+                              validation_data=(X_eval_image, y_eval),
+                              callbacks=[checkpoint, es],
+                              class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
+    model_image.save_weights(WEIGHTS_SAVE_PATH_IMAGE)
+    """end of image part"""
 
-        model.fit([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE, epochs=10000, shuffle=True,
-                  validation_data=([X_eval_image, X_eval_visit], y_eval),
-                  callbacks=[checkpoint, es],
-                  class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
-        # model.fit_generator(datagen,
-        #                     steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=200,
-        #                     validation_data=([X_eval_image, X_eval_visit], y_eval),
-        #                     callbacks=[checkpoint, csv_logger, tb, es],
-        #                     class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
+    model = combined_net()
+    model.summary()
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.load_weights(WEIGHTS_SAVE_PATH_VISIT, by_name=True)
+    model.load_weights(WEIGHTS_SAVE_PATH_IMAGE, by_name=True)
 
-        model.save_weights(WEIGHTS_SAVE_PATH)
-        print('weight saved')
+    model.fit([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE, epochs=10000, shuffle=True,
+              validation_data=([X_eval_image, X_eval_visit], y_eval),
+              callbacks=[checkpoint, es],
+              class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
+    # model.fit_generator(datagen,
+    #                     steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=200,
+    #                     validation_data=([X_eval_image, X_eval_visit], y_eval),
+    #                     callbacks=[checkpoint, csv_logger, tb, es],
+    #                     class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
 
-        score = model.evaluate([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE)
-        print('train acc', score)
+    model.save_weights(WEIGHTS_SAVE_PATH)
+    print('weight saved')
+
+    score = model.evaluate([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE)
+    print('train acc', score)
 
     print('eval acc:')
     evaluate(X_eval_image, X_eval_visit, y_eval, model=model)

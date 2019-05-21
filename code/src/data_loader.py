@@ -20,13 +20,23 @@ MODEL_CKPT = '../../result/model_visit_only.h5'
 
 
 def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, output_shape=True):
+    folders_name_ = os.listdir(image_path)
+    folders_name = []
+    for folder in folders_name_:
+        # print(folder.find('txt'))
+        if folder.find('txt') == -1:
+            folders_name.append(os.path.join(IMAGE_TRAIN_PATH, folder) + '/')
+    print(folders_name)
+
     X_name = []
+    X_train_image_ = []
     X_train_visit_ = []
     y_train_ = []
 
+    X_eval_image_ = []
     X_eval_visit_ = []
     y_eval_ = []
-    for i in range(9):
+    for i in range(len(folders_name)):
         folder = str(i + 1).zfill(3) + '/'
         folder = image_path + folder
         print(folder)
@@ -35,6 +45,8 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
         label[i] = 1
         for j, file in enumerate(files_name):
             name = re.findall('^(.+)\.jpg', file)[0]
+            image = cv2.imread(os.path.join(folder, file))
+            shape = image.shape
 
             npy_name = '.'.join([name, 'txt', 'npy'])
             npy_datum = np.load(visit_path + npy_name)
@@ -42,23 +54,37 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
 
             X_name.append(name)
             if j % 5 == 0:
+                image = np.array(image, np.int)
                 y_eval_.append(label)
                 X_eval_visit_.append(visit)
+                X_eval_image_.append(image)
             else:
+                M = cv2.getRotationMatrix2D(
+                    (shape[0] / 2, shape[1] / 2), np.random.randint(-10, 10), 1)
+                image = cv2.warpAffine(image, M, dsize=(shape[0], shape[1]))
+                image = np.array(image, np.int)
                 y_train_.append(label)
                 X_train_visit_.append(visit)
+                X_train_image_.append(image)
+                y_train_.append(label)
+                X_train_visit_.append(visit)
+                X_train_image_.append(np.flip(image, axis=np.random.randint(-1, 2)))
         print('finish', str(i + 1))
     X_name = np.array(X_name, np.str)
+    X_train_image_ = np.array(X_train_image_, np.float)
     X_train_visit_ = np.array(X_train_visit_, np.float)
     y_train_ = np.array(y_train_, np.float)
+    X_eval_image_ = np.array(X_eval_image_, np.float)
     X_eval_visit_ = np.array(X_eval_visit_, np.float)
     y_eval_ = np.array(y_eval_, np.float)
     if output_shape:
+        print('X train image shape', X_train_image_.shape)
         print('X train visit shape', X_train_visit_.shape)
         print('y train shape', y_train_.shape)
+        print('X eval image shape', X_eval_image_.shape)
         print('X eval visit shape', X_eval_visit_.shape)
         print('y eval shape', y_eval_.shape)
-    return X_train_visit_, y_train_, X_eval_visit_, y_eval_
+    return X_train_image_, X_train_visit_, y_train_, X_eval_image_, X_eval_visit_, y_eval_
 
 
 def load_test_data_visit(visit_path=VISIT_TEST_PATH):

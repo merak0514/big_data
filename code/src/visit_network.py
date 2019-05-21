@@ -16,7 +16,7 @@ def dense_net(inputs, trainable=True):
     x = BatchNormalization()(x)
     x = ReLU()(x)
     x = Dropout(0.5)(x)
-    x = Dense(256, name='visit_1', trainable=trainable)(x)
+    x = Dense(256, name='visit_2', trainable=trainable)(x)
     x = BatchNormalization()(x)
     x = ReLU()(x)
     # x = Reshape([None, 256])(x)

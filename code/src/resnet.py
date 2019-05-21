@@ -155,7 +155,7 @@ def resnet_v2(inputs, depth=DEPTH, num_classes=10, trainable=True):
                                  strides=strides,
                                  activation=None,
                                  batch_normalization=False,
-                                 name='res_stage_' + str(stage) + '__res_block_' + str(res_block) + '_0',
+                                 name='res_stage_' + str(stage) + '__res_block_' + str(res_block) + '_0_extra',
                                  trainable=trainable)
             x = keras.layers.add([x, y])
 
