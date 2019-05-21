@@ -23,7 +23,9 @@ VISIT_TEST_PATH = '../../npy/test_visit/'
 WEIGHTS_SAVE_PATH_IMAGE = '../../result/save_combine_image.h5'
 WEIGHTS_SAVE_PATH_VISIT = '../../result/save_combine_visit.h5'
 WEIGHTS_SAVE_PATH = '../../result/save_combine.h5'
-MODEL_CKPT = '../../result/model_keras_combine2.h5'
+MODEL_CKPT_IMAGE = '../../result/model_keras_combine2_image.h5'
+MODEL_CKPT_VISIT = '../../result/model_keras_combine2_visit.h5'
+MODEL_CKPT_COMBINE = '../../result/model_keras_combine2.h5'
 PREDICT_PATH = '../../result/predict_combine.txt'
 BATCH_SIZE = 64
 os.environ['CUDA_VISIBLE_DEVICES'] = "3"
@@ -45,19 +47,13 @@ def generate_generator_multiple(generator1, generator2, dir1, dir2, y, batch_siz
         yield [X1i[0], X2i[0]], X2i[1]  # Yield both images and their mutual label
 
 
-def train(train_visit=True, train_image=True):
+def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_visit=False):
     X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
-    # datagen1 = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
-    #                               zoom_range=[0.8, 1.2], horizontal_flip=True)
-    # datagen2 = ImageDataGenerator()
-    # datagen = generate_generator_multiple(datagen1, datagen2, X_train_image, X_train_visit,
-    # y_train, batch_size=BATCH_SIZE)
-    checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_acc', save_best_only=True,
-                                 save_weights_only=True)
-    es = EarlyStopping(patience=15, restore_best_weights=True)
+    es = EarlyStopping(patience=10, restore_best_weights=True)
 
     if train_visit:
         """start of visit part"""
+        checkpoint = ModelCheckpoint(MODEL_CKPT_VISIT, monitor='val_acc', save_best_only=True, save_weights_only=True)
         model_visit = visit_net()
         model_visit.summary()
         model_visit.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -68,22 +64,28 @@ def train(train_visit=True, train_image=True):
         """end of visit part"""
 
     if train_image:
+        checkpoint = ModelCheckpoint(MODEL_CKPT_IMAGE, monitor='val_acc', save_best_only=True, save_weights_only=True)
         model_image = image_net()
         model_image.summary()
-        datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
-                                     zoom_range=[0.8, 1.2], brightness_range=[0.8, 1.2])
-        datagen.fit(X_train_image)
+        # datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
+        #                              zoom_range=[0.8, 1.2], brightness_range=[0.8, 1.2])
+        # datagen.fit(X_train_image)
 
         model_image.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        if load_ckpt_image:
+            model_image.load_weights(MODEL_CKPT_IMAGE)
 
-        model_image.fit_generator(datagen.flow(X_train_image, y_train, batch_size=BATCH_SIZE),
-                                  steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=500,
-                                  validation_data=(X_eval_image, y_eval),
-                                  callbacks=[checkpoint, es],
-                                  class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
+        # model_image.fit_generator(datagen.flow(X_train_image, y_train, batch_size=BATCH_SIZE),
+        #                           steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=500,
+        #                           validation_data=(X_eval_image, y_eval),
+        #                           callbacks=[checkpoint, es],
+        #                           class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
+        model_image.fit(X_train_image, y_train, batch_size=BATCH_SIZE, epochs=10000, callbacks=[es, checkpoint],
+                        validation_data=(X_eval_image, y_eval), shuffle=True)
         model_image.save_weights(WEIGHTS_SAVE_PATH_IMAGE)
         """end of image part"""
 
+    checkpoint = ModelCheckpoint(MODEL_CKPT_COMBINE, monitor='val_acc', save_best_only=True, save_weights_only=True)
     model = combined_net()
     model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -92,8 +94,8 @@ def train(train_visit=True, train_image=True):
 
     model.fit([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE, epochs=10000, shuffle=True,
               validation_data=([X_eval_image, X_eval_visit], y_eval),
-              callbacks=[checkpoint, es],
-              class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
+              callbacks=[checkpoint, es])
+    # class_weight = [0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5]
     # model.fit_generator(datagen,
     #                     steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=200,
     #                     validation_data=([X_eval_image, X_eval_visit], y_eval),
