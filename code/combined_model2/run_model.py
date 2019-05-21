@@ -45,7 +45,7 @@ def generate_generator_multiple(generator1, generator2, dir1, dir2, y, batch_siz
         yield [X1i[0], X2i[0]], X2i[1]  # Yield both images and their mutual label
 
 
-def train():
+def train(train_visit=True, train_image=True):
     X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
     # datagen1 = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
     #                               zoom_range=[0.8, 1.2], horizontal_flip=True)
@@ -56,32 +56,33 @@ def train():
                                  save_weights_only=True)
     es = EarlyStopping(patience=15, restore_best_weights=True)
 
-    """start of visit part"""
-    model_visit = visit_net()
-    model_visit.summary()
-    model_visit.fit(X_train_visit, y_train, batch_size=BATCH_SIZE, epochs=10000,
-                    validation_data=(X_eval_visit, y_eval),
-                    callbacks=[checkpoint, es])
-    model_visit.save_weights(WEIGHTS_SAVE_PATH_VISIT)
-    """end of visit part"""
+    if train_visit:
+        """start of visit part"""
+        model_visit = visit_net()
+        model_visit.summary()
+        model_visit.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model_visit.fit(X_train_visit, y_train, batch_size=BATCH_SIZE, epochs=10000,
+                        validation_data=(X_eval_visit, y_eval),
+                        callbacks=[checkpoint, es])
+        model_visit.save_weights(WEIGHTS_SAVE_PATH_VISIT)
+        """end of visit part"""
 
-    # with 'image_part' as tmp:
-    model_image = image_net()
-    model_image.summary()
-    datagen = ImageDataGenerator(rotation_range=50, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
-                                 zoom_range=[0.8, 1.2], horizontal_flip=True, vertical_flip=True,
-                                 brightness_range=[0.8, 1.2])
-    datagen.fit(X_train_image)
+    if train_image:
+        model_image = image_net()
+        model_image.summary()
+        datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
+                                     zoom_range=[0.8, 1.2], brightness_range=[0.8, 1.2])
+        datagen.fit(X_train_image)
 
-    model_image.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model_image.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    model_image.fit_generator(datagen.flow(X_train_image, y_train, batch_size=BATCH_SIZE),
-                              steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=500,
-                              validation_data=(X_eval_image, y_eval),
-                              callbacks=[checkpoint, es],
-                              class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
-    model_image.save_weights(WEIGHTS_SAVE_PATH_IMAGE)
-    """end of image part"""
+        model_image.fit_generator(datagen.flow(X_train_image, y_train, batch_size=BATCH_SIZE),
+                                  steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=500,
+                                  validation_data=(X_eval_image, y_eval),
+                                  callbacks=[checkpoint, es],
+                                  class_weight=[0.9, 1, 2, 4, 2, 1.2, 2, 2.5, 2.5])
+        model_image.save_weights(WEIGHTS_SAVE_PATH_IMAGE)
+        """end of image part"""
 
     model = combined_net()
     model.summary()
@@ -174,6 +175,6 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    train()
+    train(train_visit=True, train_image=True)
     evaluate()
     predict()
