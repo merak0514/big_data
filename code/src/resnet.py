@@ -4,7 +4,6 @@ from keras.layers import AveragePooling2D, Input, Flatten
 
 from keras.regularizers import l2
 
-
 # Model parameter
 # ----------------------------------------------------------------------------
 #           |      | 200-epoch | Orig Paper| 200-epoch | Orig Paper| sec/epoch
@@ -29,7 +28,9 @@ def resnet_layer(inputs,
                  strides=1,
                  activation='relu',
                  batch_normalization=True,
-                 conv_first=True):
+                 conv_first=True,
+                 name=None,
+                 trainable=True):
     """2D Convolution-Batch Normalization-Activation stack builder
 
     # Arguments
@@ -50,7 +51,9 @@ def resnet_layer(inputs,
                   strides=strides,
                   padding='same',
                   kernel_initializer='he_normal',
-                  kernel_regularizer=l2(1e-4))
+                  kernel_regularizer=l2(1e-4),
+                  name=name,
+                  trainable=trainable)
 
     x = inputs
     if conv_first:
@@ -68,7 +71,7 @@ def resnet_layer(inputs,
     return x
 
 
-def resnet_v2(inputs, depth=DEPTH, num_classes=10):
+def resnet_v2(inputs, depth=DEPTH, num_classes=10, trainable=True):
     """ResNet Version 2 Model builder [b]
 
     Stacks of (1 x 1)-(3 x 3)-(1 x 1) BN-ReLU-Conv2D or also known as
@@ -102,7 +105,9 @@ def resnet_v2(inputs, depth=DEPTH, num_classes=10):
     # v2 performs Conv2D with BN-ReLU on input before splitting into 2 paths
     x = resnet_layer(inputs=inputs,
                      num_filters=num_filters_in,
-                     conv_first=True)
+                     conv_first=True,
+                     name='res_0',
+                     trainable=trainable)
 
     # Instantiate the stack of residual units
     for stage in range(3):
@@ -118,7 +123,7 @@ def resnet_v2(inputs, depth=DEPTH, num_classes=10):
             else:
                 num_filters_out = num_filters_in * 2
                 if res_block == 0:  # first layer but not first stage
-                    strides = 2    # downsample
+                    strides = 2  # downsample
 
             # bottleneck residual unit
             y = resnet_layer(inputs=x,
@@ -127,14 +132,20 @@ def resnet_v2(inputs, depth=DEPTH, num_classes=10):
                              strides=strides,
                              activation=activation,
                              batch_normalization=batch_normalization,
-                             conv_first=False)
+                             conv_first=False,
+                             name='res_stage_' + str(stage) + '__res_block_' + str(res_block) + '_0',
+                             trainable=trainable)
             y = resnet_layer(inputs=y,
                              num_filters=num_filters_in,
-                             conv_first=False)
+                             conv_first=False,
+                             name='res_stage_' + str(stage) + '__res_block_' + str(res_block) + '_1',
+                             trainable=trainable)
             y = resnet_layer(inputs=y,
                              num_filters=num_filters_out,
                              kernel_size=1,
-                             conv_first=False)
+                             conv_first=False,
+                             name='res_stage_' + str(stage) + '__res_block_' + str(res_block) + '_2',
+                             trainable=trainable)
             if res_block == 0:
                 # linear projection residual shortcut connection to match
                 # changed dims
@@ -143,7 +154,9 @@ def resnet_v2(inputs, depth=DEPTH, num_classes=10):
                                  kernel_size=1,
                                  strides=strides,
                                  activation=None,
-                                 batch_normalization=False)
+                                 batch_normalization=False,
+                                 name='res_stage_' + str(stage) + '__res_block_' + str(res_block) + '_0',
+                                 trainable=trainable)
             x = keras.layers.add([x, y])
 
         num_filters_in = num_filters_out
@@ -154,9 +167,8 @@ def resnet_v2(inputs, depth=DEPTH, num_classes=10):
     x = Activation('relu')(x)
     x = AveragePooling2D(pool_size=8)(x)
     y = Flatten()(x)
-    y = Dense(256)(y)
+    y = Dense(256, name='res_resnet_dense', trainable=trainable)(y)
     y = BatchNormalization()(y)
     y = Activation('relu')(y)
 
     return y
-

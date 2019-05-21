@@ -3,8 +3,8 @@
 # @Time     : 15:42
 # @File     : picture_classification.py
 # @Software : PyCharm
-from resnet import *
-from visit_network import *
+from src.resnet import *
+from src.visit_network import *
 from keras.models import Model
 
 

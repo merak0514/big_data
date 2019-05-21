@@ -75,7 +75,7 @@ def train():
     resnet = ResNet50(weights=None, input_shape=(100, 100, 3), classes=9)
     resnet.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_loss', save_best_only=True,
+    checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_acc', save_best_only=True,
                                  save_weights_only=True)
     # csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
     es = EarlyStopping(patience=10, restore_best_weights=True)

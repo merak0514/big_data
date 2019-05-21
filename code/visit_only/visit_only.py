@@ -8,7 +8,7 @@ import numpy as np
 import re
 import os
 from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
-from keras.layers import Dense,BatchNormalization, LeakyReLU, Dropout
+from keras.layers import Dense, BatchNormalization, LeakyReLU, Dropout
 from keras.models import Sequential
 
 IMAGE_TRAIN_PATH = '../../train/'
@@ -162,7 +162,7 @@ class Model(Sequential):
             f.close()
         print('finish predicting.')
 
-    def train(self, save_path=WEIGHTS_SAVE_PATH, batch_size=BATCH_SIZE):
+    def train(self, save_path=WEIGHTS_SAVE_PATH):
         X_train, y_train, X_eval, y_eval = load_train_data()
 
         checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_acc', save_best_only=True,
@@ -170,7 +170,7 @@ class Model(Sequential):
         es = EarlyStopping(patience=20, restore_best_weights=True)
         # tb = TensorBoard()
 
-        self.fit(X_train, y_train, batch_size=batch_size, epochs=10000, validation_data=(X_eval, y_eval),
+        self.fit(X_train, y_train, batch_size=BATCH_SIZE, epochs=10000, validation_data=(X_eval, y_eval),
                  callbacks=[checkpoint, es])
         self.save_weights(save_path)
         score = self.evaluate(X_train, y_train, batch_size=10000)

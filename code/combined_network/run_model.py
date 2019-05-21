@@ -4,7 +4,7 @@
 # @File     : train.py
 # @Software : PyCharm
 # combine model
-from model import combined_net
+from combined_network.model import combined_net
 import numpy as np
 import cv2
 import re
@@ -120,7 +120,7 @@ def train():
     model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_loss', save_best_only=True,
+    checkpoint = ModelCheckpoint(MODEL_CKPT, monitor='val_acc', save_best_only=True,
                                  save_weights_only=True)
     # csv_logger = CSVLogger('../cnn_log.csv', separator=',', append=False)
     es = EarlyStopping(patience=10, restore_best_weights=True)
