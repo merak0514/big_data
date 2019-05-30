@@ -3,10 +3,13 @@
 # @Time     : 9:15
 # @File     : data_loader.py
 # @Software : PyCharm
+import sys
+sys.path.append('../')
 import numpy as np
 import re
 import os
 import cv2
+from src.dehaze2 import deHaze
 from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
 from keras.layers import Dense, BatchNormalization, LeakyReLU, Dropout
 from keras.models import Sequential
@@ -46,6 +49,7 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
         for j, file in enumerate(files_name):
             name = re.findall('^(.+)\.jpg', file)[0]
             image = cv2.imread(os.path.join(folder, file))
+            image = deHaze(image)
             shape = image.shape
 
             npy_name = '.'.join([name, 'txt', 'npy'])
