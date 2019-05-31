@@ -18,7 +18,7 @@ from keras.regularizers import l2
 # ResNet164 |27(18)| -----     | 94.07     | -----     | 94.54     | ---(---)
 # ResNet1001| (111)| -----     | 92.39     | -----     | 95.08+-.14| ---(---)
 # ---------------------------------------------------------------------------
-n = 6
+n = 4
 DEPTH = n * 9 + 2
 
 
@@ -110,7 +110,7 @@ def resnet_v2(inputs, depth=DEPTH, num_classes=10, trainable=True):
                      trainable=trainable)
 
     # Instantiate the stack of residual units
-    for stage in range(3):
+    for stage in range(5):
         for res_block in range(num_res_blocks):
             activation = 'relu'
             batch_normalization = True

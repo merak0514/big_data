@@ -22,3 +22,7 @@ def dense_net(inputs, trainable=True):
     # x = Reshape([None, 256])(x)
     # print('x', x.shape)
     return x
+
+
+def visit_net2(inputs, trainable=True):
+    pass

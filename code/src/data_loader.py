@@ -10,6 +10,7 @@ import re
 import os
 import cv2
 from src.dehaze2 import deHaze
+from src.histogram_equal import histogram_equal
 from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
 from keras.layers import Dense, BatchNormalization, LeakyReLU, Dropout
 from keras.models import Sequential
@@ -22,7 +23,7 @@ PREDICT_PATH = '../../result/predict_visit_only.txt'
 MODEL_CKPT = '../../result/model_visit_only.h5'
 
 
-def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, output_shape=True):
+def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, output_shape=True, vision=1):
     folders_name_ = os.listdir(image_path)
     folders_name = []
     for folder in folders_name_:
@@ -49,12 +50,17 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
         for j, file in enumerate(files_name):
             name = re.findall('^(.+)\.jpg', file)[0]
             image = cv2.imread(os.path.join(folder, file))
-            image = deHaze(image)
+            image = deHaze(image)  # 去雾
+            # image = histogram_equal(image)  # 降噪  保留一个即可
             shape = image.shape
 
             npy_name = '.'.join([name, 'txt', 'npy'])
             npy_datum = np.load(visit_path + npy_name)
-            visit = np.ndarray.flatten(np.average(npy_datum, axis=1))
+            if vision == 1:
+                visit = np.ndarray.flatten(np.average(npy_datum, axis=1))
+            elif vision == 2:
+                visit = np.transpose(npy_datum, [0, 2, 1])
+                visit = visit.reshape([7*24, 26])
 
             X_name.append(name)
             if j % 5 == 0:
@@ -112,6 +118,8 @@ def load_test_data(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH):
         name = str(index).zfill(6)
         image = cv2.imread(os.path.join(image_path, name + '.jpg'))
         image = np.array(image, dtype=np.int)
+        image = deHaze(image)  # 去雾
+        # image = histogram_equal(image)  # 降噪  保留一个即可
         images_.append(image)
 
         npy_datum = np.load(os.path.join(visit_path, name+'.txt.npy'))

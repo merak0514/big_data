@@ -6,15 +6,11 @@
 import sys
 sys.path.append('../')
 from src.data_loader import load_test_data, load_train_data
-from combined_model2.model import combined_net, visit_net, image_net
+from combined_model2.model import combined_net, visit_net, image_net, combined_net2, image_net2
 import numpy as np
-import cv2
-import re
 import os
 from keras.applications.resnet50 import ResNet50
 from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers.core import Reshape
 
 IMAGE_TRAIN_PATH = '../../train/'
 IMAGE_TEST_PATH = '../../test/'
@@ -27,7 +23,7 @@ MODEL_CKPT_IMAGE = '../../result/model_keras_combine2_image.h5'
 MODEL_CKPT_VISIT = '../../result/model_keras_combine2_visit.h5'
 MODEL_CKPT_COMBINE = '../../result/model_keras_combine2.h5'
 PREDICT_PATH = '../../result/predict_combine.txt'
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 os.environ['CUDA_VISIBLE_DEVICES'] = "3"
 
 
@@ -65,7 +61,7 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
 
     if train_image:
         checkpoint = ModelCheckpoint(MODEL_CKPT_IMAGE, monitor='val_acc', save_best_only=True, save_weights_only=True)
-        model_image = image_net()
+        model_image = image_net2()
         model_image.summary()
         # datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
         #                              zoom_range=[0.8, 1.2], brightness_range=[0.8, 1.2])
@@ -74,6 +70,7 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
         model_image.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         if load_ckpt_image:
             model_image.load_weights(MODEL_CKPT_IMAGE)
+            print('load ckpt image successfully')
 
         # model_image.fit_generator(datagen.flow(X_train_image, y_train, batch_size=BATCH_SIZE),
         #                           steps_per_epoch=int(len(X_train_image) / BATCH_SIZE) * 3, epochs=500,
@@ -86,7 +83,9 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
         """end of image part"""
 
     checkpoint = ModelCheckpoint(MODEL_CKPT_COMBINE, monitor='val_acc', save_best_only=True, save_weights_only=True)
-    model = combined_net()
+
+    model = combined_net2()
+
     model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     model.load_weights(WEIGHTS_SAVE_PATH_VISIT, by_name=True)
@@ -122,7 +121,7 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEI
         print('eval wrong!')
         assert 0
     if weights_path:
-        model = combined_net()
+        model = combined_net2()
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -159,7 +158,7 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
         print('eval wrong!')
         assert 0
     if weights_path:
-        model = combined_net()
+        model = combined_net2()
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     predicts = model.predict([images, visits], batch_size=32)
@@ -177,6 +176,6 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    train(train_visit=True, train_image=True)
+    train(train_visit=False, train_image=True, load_ckpt_image=False)
     evaluate()
     predict()

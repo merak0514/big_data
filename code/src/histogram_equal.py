@@ -26,7 +26,6 @@ def histogram_equal(m):
 
 
 if __name__ == '__main__':
-
     im = cv2.imread('../../train/001/000024_001.jpg')
     cv2.imshow("before", im)
     im2 = deHaze(im).astype(np.uint8)
@@ -35,13 +34,13 @@ if __name__ == '__main__':
     cv2.imshow('raw dehaze', im2)
 
     # split g,b,r
-    g = im[:,:,0]
-    b = im[:,:,1]
-    r = im[:,:,2]
+    g = im[:, :, 0]
+    b = im[:, :, 1]
+    r = im[:, :, 2]
     # split g,b,r
-    g2 = im2[:,:,0]
-    b2 = im2[:,:,1]
-    r2 = im2[:,:,2]
+    g2 = im2[:, :, 0]
+    b2 = im2[:, :, 1]
+    r2 = im2[:, :, 2]
 
     print(type(r[0, 0]))
     print(type(r2[0, 0]))
@@ -56,14 +55,14 @@ if __name__ == '__main__':
     b2 = cv2.equalizeHist(b2)
 
     im_1 = im.copy()
-    im_1[:,:,0] = g
-    im_1[:,:,1] = b
-    im_1[:,:,2] = r
+    im_1[:, :, 0] = g
+    im_1[:, :, 1] = b
+    im_1[:, :, 2] = r
 
     im_2 = im2.copy()
-    im_2[:,:,0] = g2
-    im_2[:,:,1] = b2
-    im_2[:,:,2] = r2
+    im_2[:, :, 0] = g2
+    im_2[:, :, 1] = b2
+    im_2[:, :, 2] = r2
 
     print(im_1)
 
