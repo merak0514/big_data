@@ -5,16 +5,15 @@ import datetime
 import pandas as pd
 import os
 
-
 date2position = {}
 datestr2dateint = {}
 str2int = {}
 for i in range(24):
     str2int[str(i).zfill(2)] = i
 for i in range(182):
-    date = datetime.date(day=1, month=10, year=2018)+datetime.timedelta(days=i)
+    date = datetime.date(day=1, month=10, year=2018) + datetime.timedelta(days=i)
     date_int = int(date.__str__().replace("-", ""))
-    date2position[date_int] = [i%7, i//7]
+    date2position[date_int] = [i % 7, i // 7]
     datestr2dateint[str(date_int)] = date_int
 
 
@@ -39,13 +38,13 @@ def visit2array_test():
     for index, file_name in enumerate(file_names):
         if file_name.find('txt') == -1:
             continue
-        table = pd.read_table("../../test/"+file_name+".txt", header=None)
+        table = pd.read_table("../../test/" + file_name + ".txt", header=None)
         array = visit2array(table)
-        np.save("../../npy/test_visit/"+file_name+".npy", array)
-        sys.stdout.write('\r>> Processing visit data %d/%d'%(index+1, length))
+        np.save("../../npy/test_visit/" + file_name + ".npy", array)
+        sys.stdout.write('\r>> Processing visit data %d/%d' % (index + 1, length))
         sys.stdout.flush()
     sys.stdout.write('\n')
-    print("using time:%.2fs"%(time.time()-start_time))
+    print("using time:%.2fs" % (time.time() - start_time))
 
 
 def visit2array_train():
@@ -56,13 +55,13 @@ def visit2array_train():
     for index, file_name in enumerate(file_names):
         if file_name.find('txt') == -1:
             continue
-        table = pd.read_table("../../train/"+file_name+".txt", header=None)
+        table = pd.read_table("../../train/" + file_name + ".txt", header=None)
         array = visit2array(table)
-        np.save("../../npy/train_visit/"+file_name+".npy", array)
-        sys.stdout.write('\r>> Processing visit data %d/%d'%(index+1, length))
+        np.save("../../npy/train_visit/" + file_name + ".npy", array)
+        sys.stdout.write('\r>> Processing visit data %d/%d' % (index + 1, length))
         sys.stdout.flush()
     sys.stdout.write('\n')
-    print("using time:%.2fs"%(time.time()-start_time))
+    print("using time:%.2fs" % (time.time() - start_time))
 
 
 def visit2array_valid():
@@ -71,13 +70,13 @@ def visit2array_valid():
     length = len(filenames)
     start_time = time.time()
     for index, filename in enumerate(filenames):
-        table = pd.read_table("../../data/train/"+filename+".txt", header=None)
+        table = pd.read_table("../../data/train/" + filename + ".txt", header=None)
         array = visit2array(table)
-        np.save("../../data/npy/train_visit/"+filename+".npy", array)
-        sys.stdout.write('\r>> Processing visit data %d/%d'%(index+1, length))
+        np.save("../../data/npy/train_visit/" + filename + ".npy", array)
+        sys.stdout.write('\r>> Processing visit data %d/%d' % (index + 1, length))
         sys.stdout.flush()
     sys.stdout.write('\n')
-    print("using time:%.2fs"%(time.time()-start_time))
+    print("using time:%.2fs" % (time.time() - start_time))
 
 
 if __name__ == '__main__':

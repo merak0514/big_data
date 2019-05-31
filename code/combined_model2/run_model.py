@@ -6,7 +6,7 @@
 import sys
 sys.path.append('../')
 from src.data_loader import load_test_data, load_train_data
-from combined_model2.model import combined_net, visit_net, image_net, combined_net2, image_net2
+from combined_model2.model import combined_net, visit_net, image_net, combined_net_2, image_net_2
 import numpy as np
 import os
 from keras.applications.resnet50 import ResNet50
@@ -53,6 +53,10 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
         model_visit = visit_net()
         model_visit.summary()
         model_visit.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        if load_ckpt_visit:
+            model_visit.load_weights(MODEL_CKPT_VISIT)
+            print('load ckpt visit successfully')
+
         model_visit.fit(X_train_visit, y_train, batch_size=BATCH_SIZE, epochs=10000,
                         validation_data=(X_eval_visit, y_eval),
                         callbacks=[checkpoint, es])
@@ -61,7 +65,7 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
 
     if train_image:
         checkpoint = ModelCheckpoint(MODEL_CKPT_IMAGE, monitor='val_acc', save_best_only=True, save_weights_only=True)
-        model_image = image_net2()
+        model_image = image_net_2()
         model_image.summary()
         # datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
         #                              zoom_range=[0.8, 1.2], brightness_range=[0.8, 1.2])
@@ -84,7 +88,7 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
 
     checkpoint = ModelCheckpoint(MODEL_CKPT_COMBINE, monitor='val_acc', save_best_only=True, save_weights_only=True)
 
-    model = combined_net2()
+    model = combined_net_2()
 
     model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -114,14 +118,14 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
 
 
 def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEIGHTS_SAVE_PATH, model=None):
-    if not X_eval_image:
+    if X_eval_image is None:
         X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
 
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
-    if weights_path:
-        model = combined_net2()
+    if weights_path is None:
+        model = combined_net_2()
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -158,7 +162,7 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
         print('eval wrong!')
         assert 0
     if weights_path:
-        model = combined_net2()
+        model = combined_net_2()
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     predicts = model.predict([images, visits], batch_size=32)
@@ -176,6 +180,6 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    train(train_visit=False, train_image=True, load_ckpt_image=False)
+    train(train_visit=True, train_image=False, load_ckpt_image=False, load_ckpt_visit=False)
     evaluate()
     predict()

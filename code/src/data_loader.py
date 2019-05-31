@@ -56,9 +56,9 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
 
             npy_name = '.'.join([name, 'txt', 'npy'])
             npy_datum = np.load(visit_path + npy_name)
-            if vision == 1:
+            if vision == 1:  # 第一种：直接取平均
                 visit = np.ndarray.flatten(np.average(npy_datum, axis=1))
-            elif vision == 2:
+            elif vision == 2:  # 第二种：后面做一个一维卷积
                 visit = np.transpose(npy_datum, [0, 2, 1])
                 visit = visit.reshape([7*24, 26])
 

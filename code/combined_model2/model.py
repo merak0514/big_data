@@ -11,6 +11,7 @@ from keras.layers import GlobalAveragePooling2D
 from keras.models import Sequential
 
 VISIT_INPUT_SHAPE = np.array([7*24])
+VISIT_INPUT_SHAPE_2 = np.array([7*24, 26])
 IMAGE_INPUT_SHAPE = (100, 100, 3)
 RESNET_WEIGHT_PATH = '../../result/resnet50.h5'
 
@@ -49,7 +50,7 @@ def combined_net():
     return model
 
 
-def image_net2():
+def image_net_2():
     resnet = ResNet50(weights=RESNET_WEIGHT_PATH, input_shape=(100, 100, 3), classes=9, include_top=False)
     resnet.trainable = False
     resnet_end = resnet.layers[-1].output
@@ -60,12 +61,20 @@ def image_net2():
     return i_net
 
 
-def combined_net2():
+def visit_net_2():
+    visit_input = Input(shape=VISIT_INPUT_SHAPE_2, name='visit_input')
+    x = dense_net(visit_input, trainable=True)
+    outputs = Dense(9, activation='softmax', name='visit_softmax')(x)
+    model = Model(inputs=visit_input, outputs=outputs)
+    return model
+
+
+def combined_net_2():
     image_input = Input(shape=IMAGE_INPUT_SHAPE, name='image_input')
-    image_net_ = ResNet50(weights=RESNET_WEIGHT_PATH, input_shape=(100, 100, 3), classes=9, include_top=False)
+    image_net_ = ResNet50(weights=RESNET_WEIGHT_PATH, input_shape=IMAGE_INPUT_SHAPE, classes=9, include_top=False)
     image_net_.trainable = False
     new_image_output = GlobalAveragePooling2D(name='avg_pool')(image_net_.layers[-1].output)
-    new_image_output = Dense(256, activation='relu')(new_image_output)
+    new_image_output = Dense(256, activation='relu', name='combine_dense_1')(new_image_output)
 
     visit_input = Input(shape=VISIT_INPUT_SHAPE, name='visit_input')
     # visit_input_ = Reshape((7*24,))(visit_input)
@@ -73,11 +82,10 @@ def combined_net2():
     visit_net_ = dense_net(visit_input, trainable=False)
 
     x = keras.layers.concatenate([new_image_output, visit_net_])
-    x = Dense(1024)(x)
+    x = Dense(1024, name='combine_dense_2')(x)
     x = BatchNormalization()(x)
     x = ReLU()(x)
     x = Dropout(0.5)(x)
-    outputs = Dense(9, activation='softmax')(x)
-    model = Model(inputs=[image_input, visit_input], outputs=outputs)
-    model.set_weights(image_net_.get_weights())
+    outputs = Dense(9, activation='softmax', name='combine_dense_3')(x)
+    model = Model(inputs=[image_net_.inputs[0], visit_input], outputs=outputs)
     return model
