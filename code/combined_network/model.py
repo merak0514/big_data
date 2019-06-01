@@ -19,7 +19,7 @@ def combined_net():
     # visit_input_ = Reshape((7*24,))(visit_input)
     print(visit_input.shape)
     # print(visit_input_.shape)
-    visit_net = dense_net(visit_input)
+    visit_net = visit_net_v1(visit_input)
     x = keras.layers.concatenate([image_net, visit_net])
     x = Dense(1024)(x)
     x = BatchNormalization()(x)

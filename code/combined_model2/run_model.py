@@ -27,9 +27,9 @@ MODEL_CKPT_COMBINE = '../../result/model_keras_combine2.h5'
 PREDICT_PATH = '../../result/predict_combine.txt'
 MODEL_COMBINED_VERSION = 2
 MODEL_IMAGE_VERSION = 2
-MODEL_VISIT_VERSION = 1
+MODEL_VISIT_VERSION = 2
 BATCH_SIZE = 256
-os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 
 def generate_generator_multiple(generator1, generator2, dir1, dir2, y, batch_size):
@@ -49,7 +49,8 @@ def generate_generator_multiple(generator1, generator2, dir1, dir2, y, batch_siz
 
 
 def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_visit=False):
-    X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
+    X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval \
+        = load_train_data(version=MODEL_VISIT_VERSION)
     es = EarlyStopping(patience=10, restore_best_weights=True)
 
     if train_visit:
@@ -124,7 +125,8 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
 
 def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEIGHTS_SAVE_PATH, model=None):
     if X_eval_image is None:
-        X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval = load_train_data()
+        X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval\
+            = load_train_data(version=MODEL_VISIT_VERSION)
 
     if not (weights_path or model):
         print('eval wrong!')
@@ -143,7 +145,17 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEI
     cm_norm = cm.astype(float) / cm.sum(axis=1)[:, np.newaxis]
     print('cm', cm)
     print('cm_norm', cm_norm)
-    plt.imshow(cm_norm, interpolation='nearest', cmap=plt.cm.Blues)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    cax = ax.matshow(cm_norm, cmap=plt.cm.Blues)
+    fig.colorbar(cax)
+    for i in range(cm_norm.shape[0]):
+        for j in range(cm_norm.shape[1]):
+            ax.text(j, i, format(cm_norm[i, j], '.2f'),
+                    ha="center", va="center",
+                    color="white" if cm_norm[i, j] > cm_norm.max()/2 else "black")
+    fig.tight_layout()
+    plt.show()
 
     recall_counts = np.zeros(9)  # 每个区域有几个，真實的總的A類
     recall_corrects_counts = np.zeros(9)  # 預測正確的A類, 用于計算查全率（預測正確的A類/真實的總的A類）
@@ -191,6 +203,6 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    # train(train_visit=False, train_image=True, load_ckpt_image=False, load_ckpt_visit=False)
+    train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_visit=False)
     evaluate()
-    # predict()
+    predict()

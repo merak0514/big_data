@@ -11,9 +11,6 @@ import os
 import cv2
 from src.dehaze2 import deHaze
 from src.histogram_equal import histogram_equal
-from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
-from keras.layers import Dense, BatchNormalization, LeakyReLU, Dropout
-from keras.models import Sequential
 IMAGE_TRAIN_PATH = '../../train/'
 IMAGE_TEST_PATH = '../../test/'
 VISIT_TRAIN_PATH = '../../npy/train_visit/'
@@ -23,7 +20,7 @@ PREDICT_PATH = '../../result/predict_visit_only.txt'
 MODEL_CKPT = '../../result/model_visit_only.h5'
 
 
-def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, output_shape=True, vision=1):
+def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, output_shape=True, version=1):
     folders_name_ = os.listdir(image_path)
     folders_name = []
     for folder in folders_name_:
@@ -56,9 +53,9 @@ def load_train_data(image_path=IMAGE_TRAIN_PATH, visit_path=VISIT_TRAIN_PATH, ou
 
             npy_name = '.'.join([name, 'txt', 'npy'])
             npy_datum = np.load(visit_path + npy_name)
-            if vision == 1:  # 第一种：直接取平均
+            if version == 1:  # 第一种：直接取平均
                 visit = np.ndarray.flatten(np.average(npy_datum, axis=1))
-            elif vision == 2:  # 第二种：后面做一个一维卷积
+            elif version == 2:  # 第二种：后面做一个一维卷积
                 visit = np.transpose(npy_datum, [0, 2, 1])
                 visit = visit.reshape([7*24, 26])
 
@@ -111,7 +108,7 @@ def load_test_data_visit(visit_path=VISIT_TEST_PATH):
     return visits_
 
 
-def load_test_data(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH):
+def load_test_data(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, version=1):
     images_ = []
     visits_ = []
     for index in range(10000):
@@ -123,7 +120,11 @@ def load_test_data(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH):
         images_.append(image)
 
         npy_datum = np.load(os.path.join(visit_path, name+'.txt.npy'))
-        visit = np.ndarray.flatten(np.average(npy_datum, axis=1))
+        if version == 1:  # 第一种：直接取平均
+            visit = np.ndarray.flatten(np.average(npy_datum, axis=1))
+        elif version == 2:  # 第二种：后面做一个一维卷积
+            visit = np.transpose(npy_datum, [0, 2, 1])
+            visit = visit.reshape([7 * 24, 26])
         visits_.append(visit)
 
     images_ = np.array(images_, dtype=np.int)

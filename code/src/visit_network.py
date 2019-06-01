@@ -7,7 +7,7 @@ from keras.layers import Dense, BatchNormalization, Activation, ReLU, Flatten, R
 import numpy as np
 
 
-def dense_net(inputs, trainable=True):
+def visit_net_v1(inputs, trainable=True):
     x = Dense(1024, name='visit_0', trainable=trainable)(inputs)
     x = BatchNormalization()(x)
     x = ReLU()(x)
@@ -32,19 +32,19 @@ def visit_net_v2(inputs, trainable=True):
     x = MaxPooling1D(2, padding='same')(x)  # 84
 
     x = Conv1D(filters=128, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
-               trainable=trainable, name='visit_0')(x)  # 128
+               trainable=trainable, name='visit_1')(x)  # 128
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = MaxPooling1D(2, padding='same')(x)  # 42
 
     x = Conv1D(filters=256, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
-               trainable=trainable, name='visit_0')(x)  # 256
+               trainable=trainable, name='visit_2')(x)  # 256
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = MaxPooling1D(2, padding='same')(x)  # 21
 
     x = Conv1D(filters=512, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
-               trainable=trainable, name='visit_0')(x)  # 512
+               trainable=trainable, name='visit_3')(x)  # 512
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
     x = MaxPooling1D(2, padding='same')(x)  # 10

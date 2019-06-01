@@ -9,20 +9,20 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def histogram_equal(m):
-    g = m[:, :, 0]
-    b = m[:, :, 1]
-    r = m[:, :, 2]
+def histogram_equal(m_):
+    g_ = m_[:, :, 0]
+    b_ = m_[:, :, 1]
+    r_ = m_[:, :, 2]
 
-    r = cv2.equalizeHist(r)
-    g = cv2.equalizeHist(g)
-    b = cv2.equalizeHist(b)
+    r_ = cv2.equalizeHist(r_)
+    g_ = cv2.equalizeHist(g_)
+    b_ = cv2.equalizeHist(b_)
 
-    im_1 = im.copy()
-    im_1[:, :, 0] = g
-    im_1[:, :, 1] = b
-    im_1[:, :, 2] = r
-    return im_1
+    im_1_ = m_.copy()
+    im_1_[:, :, 0] = g_
+    im_1_[:, :, 1] = b_
+    im_1_[:, :, 2] = r_
+    return im_1_
 
 
 if __name__ == '__main__':
