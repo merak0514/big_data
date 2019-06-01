@@ -70,7 +70,7 @@ def combined_net_1():
     x = Dropout(0.5)(x)
     outputs = Dense(9, activation='softmax', name='combine_dense_3')(x)
     model = Model(inputs=[image_net_.inputs[0], visit_input], outputs=outputs)
-    model.summary()
+    # model.summary()
     return model
 
 
@@ -113,7 +113,7 @@ def combined_net_2():
     x = Dropout(0.5)(x)
     outputs = Dense(9, activation='softmax', name='combine_dense_3')(x)
     model = Model(inputs=[image_net_.inputs[0], visit_input], outputs=outputs)
-    model.summary()
+    # model.summary()
     return model
 
 

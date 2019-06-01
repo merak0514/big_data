@@ -29,8 +29,16 @@ def visit_net_v2(inputs, trainable=True):
                trainable=trainable, name='visit_0')(inputs)  # 64
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
+    x = Conv1D(filters=64, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
+               trainable=trainable, name='visit_0')(inputs)  # 64
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
     x = MaxPooling1D(2, padding='same')(x)  # 84
 
+    x = Conv1D(filters=128, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
+               trainable=trainable, name='visit_1')(x)  # 128
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
     x = Conv1D(filters=128, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
                trainable=trainable, name='visit_1')(x)  # 128
     x = BatchNormalization()(x)
@@ -41,8 +49,16 @@ def visit_net_v2(inputs, trainable=True):
                trainable=trainable, name='visit_2')(x)  # 256
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
+    x = Conv1D(filters=256, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
+               trainable=trainable, name='visit_2')(x)  # 256
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
     x = MaxPooling1D(2, padding='same')(x)  # 21
 
+    x = Conv1D(filters=512, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
+               trainable=trainable, name='visit_3')(x)  # 512
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
     x = Conv1D(filters=512, kernel_size=3, strides=1, padding='same', kernel_initializer='he_normal',
                trainable=trainable, name='visit_3')(x)  # 512
     x = BatchNormalization()(x)
@@ -51,6 +67,7 @@ def visit_net_v2(inputs, trainable=True):
 
     x = Flatten()(x)
     x = Dense(256)(x)
+    x = Dropout(0.5)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
 

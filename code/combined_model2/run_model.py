@@ -51,13 +51,14 @@ def generate_generator_multiple(generator1, generator2, dir1, dir2, y, batch_siz
 def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_visit=False):
     X_train_image, X_train_visit, y_train, X_eval_image, X_eval_visit, y_eval \
         = load_train_data(version=MODEL_VISIT_VERSION)
-    es = EarlyStopping(patience=10, restore_best_weights=True)
+    es = EarlyStopping(patience=20, restore_best_weights=True)
 
     if train_visit:
         """start of visit part"""
+        print('train visit')
         checkpoint = ModelCheckpoint(MODEL_CKPT_VISIT, monitor='val_acc', save_best_only=True, save_weights_only=True)
         model_visit = eval('visit_net_'+str(MODEL_VISIT_VERSION))()
-        model_visit.summary()
+        # model_visit.summary()
         model_visit.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         if load_ckpt_visit:
             model_visit.load_weights(MODEL_CKPT_VISIT)
@@ -70,9 +71,10 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
         """end of visit part"""
 
     if train_image:
+        print('train image')
         checkpoint = ModelCheckpoint(MODEL_CKPT_IMAGE, monitor='val_acc', save_best_only=True, save_weights_only=True)
         model_image = eval('image_net_'+str(MODEL_IMAGE_VERSION))()
-        model_image.summary()
+        # model_image.summary()
         # datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
         #                              zoom_range=[0.8, 1.2], brightness_range=[0.8, 1.2])
         # datagen.fit(X_train_image)
@@ -92,11 +94,12 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
         model_image.save_weights(WEIGHTS_SAVE_PATH_IMAGE)
         """end of image part"""
 
+    print('train combined')
     checkpoint = ModelCheckpoint(MODEL_CKPT_COMBINE, monitor='val_acc', save_best_only=True, save_weights_only=True)
 
     model = eval('combined_net_'+str(MODEL_COMBINED_VERSION))()
 
-    model.summary()
+    # model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     model.load_weights(WEIGHTS_SAVE_PATH_VISIT, by_name=True)
     model.load_weights(WEIGHTS_SAVE_PATH_IMAGE, by_name=True)
@@ -117,6 +120,8 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
     score = model.evaluate([X_train_image, X_train_visit], y_train, batch_size=BATCH_SIZE)
     print('train acc', score)
 
+    print('predict')
+    predict(model=model)
     print('eval acc:')
     evaluate(X_eval_image, X_eval_visit, y_eval, model=model)
     print('train acc')
@@ -179,8 +184,7 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEI
 
 def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path=WEIGHTS_SAVE_PATH, model=None,
             predict_path=PREDICT_PATH):
-
-    images, visits = load_test_data(image_path, visit_path)
+    images, visits = load_test_data(image_path, visit_path, version=MODEL_VISIT_VERSION)
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
@@ -204,5 +208,5 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 if __name__ == '__main__':
     train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_visit=False)
-    evaluate()
+    # evaluate()
     predict()
