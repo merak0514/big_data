@@ -3,14 +3,16 @@
 # @Time     : 9:21
 # @File     : run_model.py
 # @Software : PyCharm
+import numpy as np
+import os
+from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
 import sys
 sys.path.append('../')
 from src.data_loader import load_test_data, load_train_data
-from combined_model2.model import combined_net, visit_net, image_net, combined_net_2, image_net_2
-import numpy as np
-import os
-from keras.applications.resnet50 import ResNet50
-from keras.callbacks import ModelCheckpoint, CSVLogger, EarlyStopping, TensorBoard
+from combined_model2.model import *
+
 
 IMAGE_TRAIN_PATH = '../../train/'
 IMAGE_TEST_PATH = '../../test/'
@@ -23,6 +25,9 @@ MODEL_CKPT_IMAGE = '../../result/model_keras_combine2_image.h5'
 MODEL_CKPT_VISIT = '../../result/model_keras_combine2_visit.h5'
 MODEL_CKPT_COMBINE = '../../result/model_keras_combine2.h5'
 PREDICT_PATH = '../../result/predict_combine.txt'
+MODEL_COMBINED_VERSION = 2
+MODEL_IMAGE_VERSION = 2
+MODEL_VISIT_VERSION = 1
 BATCH_SIZE = 256
 os.environ['CUDA_VISIBLE_DEVICES'] = "3"
 
@@ -50,7 +55,7 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
     if train_visit:
         """start of visit part"""
         checkpoint = ModelCheckpoint(MODEL_CKPT_VISIT, monitor='val_acc', save_best_only=True, save_weights_only=True)
-        model_visit = visit_net()
+        model_visit = eval('visit_net_'+str(MODEL_VISIT_VERSION))()
         model_visit.summary()
         model_visit.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         if load_ckpt_visit:
@@ -65,7 +70,7 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
 
     if train_image:
         checkpoint = ModelCheckpoint(MODEL_CKPT_IMAGE, monitor='val_acc', save_best_only=True, save_weights_only=True)
-        model_image = image_net_2()
+        model_image = eval('image_net_'+str(MODEL_IMAGE_VERSION))()
         model_image.summary()
         # datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, shear_range=0.1,
         #                              zoom_range=[0.8, 1.2], brightness_range=[0.8, 1.2])
@@ -88,7 +93,7 @@ def train(train_visit=True, train_image=True, load_ckpt_image=False, load_ckpt_v
 
     checkpoint = ModelCheckpoint(MODEL_CKPT_COMBINE, monitor='val_acc', save_best_only=True, save_weights_only=True)
 
-    model = combined_net_2()
+    model = eval('combined_net_'+str(MODEL_COMBINED_VERSION))()
 
     model.summary()
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -124,8 +129,8 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEI
     if not (weights_path or model):
         print('eval wrong!')
         assert 0
-    if weights_path is None:
-        model = combined_net_2()
+    if weights_path:
+        model = eval('combined_net_'+str(MODEL_COMBINED_VERSION))()
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
@@ -133,6 +138,12 @@ def evaluate(X_eval_image=None, X_eval_visit=None, y_eval=None, weights_path=WEI
     predicts = model.predict([X_eval_image, X_eval_visit], batch_size=128)
     predicts = np.argmax(predicts, axis=1)
     corrects = labels == predicts
+
+    cm = confusion_matrix(labels, predicts)
+    cm_norm = cm.astype(float) / cm.sum(axis=1)[:, np.newaxis]
+    print('cm', cm)
+    print('cm_norm', cm_norm)
+    plt.imshow(cm_norm, interpolation='nearest', cmap=plt.cm.Blues)
 
     recall_counts = np.zeros(9)  # 每个区域有几个，真實的總的A類
     recall_corrects_counts = np.zeros(9)  # 預測正確的A類, 用于計算查全率（預測正確的A類/真實的總的A類）
@@ -162,7 +173,7 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
         print('eval wrong!')
         assert 0
     if weights_path:
-        model = combined_net_2()
+        model = eval('combined_net_'+str(MODEL_COMBINED_VERSION))()
         model.load_weights(weights_path)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     predicts = model.predict([images, visits], batch_size=32)
@@ -180,6 +191,6 @@ def predict(image_path=IMAGE_TEST_PATH, visit_path=VISIT_TEST_PATH, weights_path
 
 
 if __name__ == '__main__':
-    train(train_visit=True, train_image=False, load_ckpt_image=False, load_ckpt_visit=False)
+    # train(train_visit=False, train_image=True, load_ckpt_image=False, load_ckpt_visit=False)
     evaluate()
-    predict()
+    # predict()
